@@ -1,0 +1,33 @@
+{
+  "name": "RestClient",
+  "version": "0.1.0",
+  "description": "A RESTful HTTP client for JavaScript.",
+  "main": "RestClient.js",
+  "moduleType": [
+    "amd"
+  ],
+  "keywords": [
+    "rest",
+    "json",
+    "promises"
+  ],
+  "authors": [
+    "Remel Pugh"
+  ],
+  "license": "MIT",
+  "private": true,
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ],
+  "dependencies": {
+    "rsvp": "~3.0.13",
+    "bluebird": "~2.3.0",
+    "requirejs": "~2.1.14",
+    "lodash": "~2.4.1",
+    "vow": "~0.4.5"
+  }
+}

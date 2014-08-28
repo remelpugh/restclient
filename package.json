@@ -1,0 +1,28 @@
+{
+  "author": {
+    "name": "Remel Pugh",
+    "email": "<remelpguh@gmail.com>"
+  },
+  "bugs": {
+    "url": "https://github.com/remelpugh/restclient/issues"
+  },
+  "description": "A RESTful HTTP client for JavaScript.",
+  "devDependencies": {},
+  "homepage": "https://github.com/remelpugh/restclient",
+  "licenses": [
+    {
+      "type": "MIT",
+      "url": "https://raw.githubusercontent.com/remelpugh/restclient/master/LICENSE"
+    }
+  ],
+  "name": "RestClient",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/remelpugh/restclient.git"
+  },
+  "title": "JavaScript RestClient",
+  "version": "0.1.0",
+  "dependencies": {
+    "tsd": "^0.5.7"
+  }
+}
