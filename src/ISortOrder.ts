@@ -1,6 +1,6 @@
 ﻿interface ISortOrder {
-    direction: string
-    field: string
+    direction: string;
+    field: string;
 }
 
 export = ISortOrder;

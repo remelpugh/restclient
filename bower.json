@@ -1,10 +1,10 @@
 {
   "name": "RestClient",
-  "version": "0.1.0",
+  "version": "0.1.64",
   "description": "A RESTful HTTP client for JavaScript.",
   "main": "RestClient.js",
   "moduleType": [
-    "amd"
+    "commonjs"
   ],
   "keywords": [
     "rest",
@@ -24,10 +24,12 @@
     "tests"
   ],
   "dependencies": {
-    "rsvp": "~3.0.13",
-    "bluebird": "~2.3.0",
-    "requirejs": "~2.1.14",
-    "lodash": "~2.4.1",
-    "vow": "~0.4.5"
+    "vow": "~0.4.5",
+    "when": "~3.4.4"
+  },
+  "overrides": {
+    "lodash": {
+      "main": "dist/lodash.js"
+    }
   }
 }

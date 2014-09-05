@@ -6,15 +6,23 @@ wrapper methods to make easy GET, POST, PUT, and DELETE HTTP calls.
 
 ##### Dependencies:
 
-* [lodash](https://github.com/lodash/lodash): ^2.4.1
 * [vow](https://github.com/kriskowal/q): ^0.4.5
+
+##### Browser Support:
+
+* IE9+
+* Chrome 23+
+* Firefox 21+
 
 Examples:
 
 ```javascript
 // GET
 
-
 // POST
+
+// PUT
+
+// DELETE
 
 ```

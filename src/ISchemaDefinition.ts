@@ -1,11 +1,11 @@
 ﻿import ISortOrder = require("ISortOrder");
 
 interface ISchemaDefinition {
-    args?: string[]
-    autoGenerateCrud?: boolean
-    parse(data: string): any
-    sort?: any
-    url: string
+    args?: string[];
+    autoGenerateCrud?: boolean;
+    parse(data: string): any;
+    sort?: any;
+    url: string;
 }
 
 export = ISchemaDefinition;

@@ -1,6 +1,10 @@
+# FOLDER IGNORES
 .idea
 bower_components/
+build/definitions/
+build/js/
 node_modules/
+# FILE IGNORES
 src/*.js
 src/*.js.map
 src/*.d.ts

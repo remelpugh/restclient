@@ -1,29 +1,28 @@
 ﻿/// <reference path="../typings/tsd.d.ts" />
-/// <reference path="../typings/vow/vow.d.ts" />
-import IAjaxOptions = require("IAjaxOptions");
-import IErrorResponse = require("IErrorResponse");
-import ISchemaDefinition = require("ISchemaDefinition");
-import ISortOrder = require("ISortOrder");
-import HeaderNameValue = require("HeaderNameValue");
-import HttpMethod = require("HttpMethod");
-import RestClientConfig = require("RestClientConfig");
-import RestClientOptions = require("RestClientOptions");
-import Schema = require("Schema");
+import IAjaxOptions = require("./IAjaxOptions");
+import IErrorResponse = require("./IErrorResponse");
+import ISchemaDefinition = require("./ISchemaDefinition");
+import ISortOrder = require("./ISortOrder");
+import IHeaderNameValue = require("./IHeaderNameValue");
+import HttpMethod = require("./HttpMethod");
+import IRestClientConfig = require("./IRestClientConfig");
+import IRestClientOptions = require("./IRestClientOptions");
+import Schema = require("./ISchema");
+import utils = require("./Utilities");
 
-// third party libraries
-import _ = require("lodash");
-import vow = require("vow");
-
+/**
+ * A RESTful HTTP client for JavaScript.
+ */
 class RestClient {
     cache: Storage = window.localStorage;
-    config: RestClientConfig;
+    config: IRestClientConfig;
     defaultAjaxOptions: IAjaxOptions;
-    defaultHeaders: HeaderNameValue[];
-    headers: HeaderNameValue[];
+    defaultHeaders: IHeaderNameValue[];
+    headers: IHeaderNameValue[];
     schema: Schema;
 
-    constructor(clientOptions: RestClientOptions) {
-        var options: RestClientOptions = clientOptions;
+    constructor(clientOptions: IRestClientOptions) {
+        var options: IRestClientOptions = clientOptions;
 
         this.config = options.config;
         this.schema = options.schema;
@@ -35,7 +34,7 @@ class RestClient {
                 value: "gzip"
             }
         ];
-        _.defaults(this.headers, this.defaultHeaders);
+        utils.merge(this.headers, this.defaultHeaders);
 
         this.defaultAjaxOptions = {
             contentType: "application/json",
@@ -50,19 +49,19 @@ class RestClient {
         var method: string;
         var schemaDefinition: ISchemaDefinition;
 
-        _.defaults(options, this.defaultAjaxOptions);
+        utils.merge(options, this.defaultAjaxOptions);
 
-        if (!_.isEmpty(options.data) && httpMethod === HttpMethod.Get) {
+        if (!utils.isEmpty(options.data) && httpMethod === HttpMethod.Get) {
             var query: string = RestClient.serialize(options.data);
 
-            url = url + '?' + query;
+            url = url + "?" + query;
         }
 
         if (cacheData) {
             cacheKey = "RestClient_" + url;
         }
 
-        if (!_.isEmpty(options.schemaDefinition)) {
+        if (!utils.isEmpty(options.schemaDefinition)) {
             schemaDefinition = this.schema[options.schemaDefinition];
         }
 
@@ -82,21 +81,23 @@ class RestClient {
         }
 
         var parseData = (data: string): any => {
-            var isSchemaDefined: boolean = !_.isUndefined(schemaDefinition);
+            var isSchemaDefined: boolean = !utils.isUndefined(schemaDefinition);
             var parsed: any = JSON.parse(data);
 
             if (isSchemaDefined) {
-                if (_.isFunction(schemaDefinition.parse)) {
+                if (typeof schemaDefinition.parse === "function") {
                     parsed = schemaDefinition.parse(parsed);
                 }
-                if (!_.isUndefined(schemaDefinition.sort) && _.isArray(parsed)) {
+                if (typeof schemaDefinition.sort !== "undefined" && utils.isArray(parsed)) {
                     var sort: any = schemaDefinition.sort;
 
-                    if (!_.isArray(sort)) {
+                    if (!utils.isArray(sort)) {
                         sort = [sort];
                     }
 
-                    _.each(sort, (order: ISortOrder) => {
+                    for (var i: number = 0, length: number = sort.length; i < length; i += 1) {
+                        var order: ISortOrder = sort[i];
+
                         parsed.sort((a: any, b: any) => {
                             var dir: number = (order.direction.toLowerCase() === "asc") ? 1 : -1;
                             var field = order.field;
@@ -110,7 +111,7 @@ class RestClient {
 
                             return 0;
                         });
-                    });
+                    }
                 }
             }
 
@@ -135,7 +136,7 @@ class RestClient {
 
             var request = RestClient.createXmlHttpRequest(method, url);
 
-            if (_.isNull(request)) {
+            if (utils.isNull(request)) {
                 reject(new Error("Failed to create a connection to the server."));
 
                 return;
@@ -157,14 +158,27 @@ class RestClient {
                         errorResponse = {
                             errors: ["Unexpected error."]
                         };
+
+                        reject(errorResponse);
                         break;
                     case 404:
                         errorResponse = {
-                            errors: ["Data not found"]
+                            errors: ["Endpoint not found: " + url]
                         };
+
+                        reject(errorResponse);
                         break;
                     case 400:
-                        errorResponse = JSON.parse(request.responseText);
+                        try {
+                            errorResponse = JSON.parse(request.responseText);
+                        }
+                        catch (e) {
+                            errorResponse = {
+                                errors: ["Unexpected error."]
+                            };
+                        }
+
+                        reject(errorResponse);
                         break;
                     default:
                         // status 200 OK, 201 CREATED, 20* ALL OK
@@ -186,37 +200,18 @@ class RestClient {
                         }
                         break;
                 }
-                //// status 200 OK, 201 CREATED, 20* ALL OK
-                //if ((status >= 200 && status <= 299) || status === 304) {
-                //    try {
-                //        if (this.config.cacheData && httpMethod === HttpMethod.Get) {
-                //            this.cache.setItem(cacheKey, request.responseText);
-                //        }
-
-                //        resolve(parseData(request.responseText));
-                //    }
-                //    catch (ex) {
-                //        reject(new Error("Invalid JSON\n" + ex));
-                //    }
-                //}
-                //else if (status === 404) {
-                //    reject(new Error("Unable to find the endpoint: " + url));
-                //}
-                //else {
-                //    reject(new Error("Request failed with status code " + status + "\n" + request.statusText));
-                //}
             };
 
-            if (!_.isEmpty(options.contentType)) {
+            if (!utils.isEmpty(options.contentType)) {
                 request.setRequestHeader("content-type", options.contentType);
             }
 
-            if (!_.isEmpty(options.headers)) {
-                var headers: HeaderNameValue[] = options.headers;
+            if (!utils.isEmpty(options.headers)) {
+                var headers: IHeaderNameValue[] = options.headers;
 
                 headers = headers || [];
 
-                _.each(headers, (header: HeaderNameValue) => {
+                utils.each(headers, (header: IHeaderNameValue) => {
                     request.setRequestHeader(header.name, header.value);
                 });
             }
@@ -236,7 +231,7 @@ class RestClient {
             data: JSON.stringify(data)
         };
 
-        _.defaults(options, settings);
+        utils.merge(options, settings);
 
         return this.ajax(this.getUri(url), HttpMethod.Post, settings);
     }
@@ -248,7 +243,7 @@ class RestClient {
             data: JSON.stringify(data)
         };
 
-        _.defaults(options, settings);
+        utils.merge(options, settings);
 
         return this.ajax(this.getUri(url), HttpMethod.Put, settings);
     }
@@ -260,17 +255,17 @@ class RestClient {
             data: JSON.stringify(data)
         };
 
-        _.defaults(options, settings);
+        utils.merge(options, settings);
 
         return this.ajax(this.getUri(url), HttpMethod.Delete, options);
     }
 
     updateSchema(schema: Schema) {
-        var currentKeys: string[] = _.keys(this.schema);
-        var newKeys: string[] = _.keys(schema);
-        var remove: string[] = _.difference(currentKeys, newKeys);
+        var currentKeys: string[] = utils.keys(this.schema);
+        var newKeys: string[] = utils.keys(schema);
+        var remove: string[] = utils.difference(currentKeys, newKeys);
 
-        _.each(remove, (key: string) => {
+        utils.each(remove, (key: string) => {
             delete this[key];
         });
 
@@ -281,14 +276,10 @@ class RestClient {
     static createXmlHttpRequest(method: string, url: string): XMLHttpRequest {
         var xhr: any = new XMLHttpRequest();
 
-        if ("withCredentials" in xhr) {
-            // Check if the XMLHttpRequest object has a "withCredentials" property. "withCredentials" only exists
-            // on XMLHTTPRequest2 objects.
+        if (utils.hasProperty(xhr, "withCredentials")) {
             xhr.open(method, url, true);
         }
-        else if (typeof XDomainRequest != "undefined") {
-            // Otherwise, check if XDomainRequest. XDomainRequest only exists in IE, and is IE's way of making
-            // CORS requests.
+        else if (!utils.isUndefined(XDomainRequest)) {
             xhr = new XDomainRequest();
             xhr.open(method, url, true);
         }
@@ -300,27 +291,7 @@ class RestClient {
         return xhr;
     }
 
-    static serialize(data: any): string {
-        if (!_.isObject(data)) {
-            return data;
-        }
-
-        if (_.isNull(data) || _.isUndefined(data)) {
-            return "";
-        }
-
-        var parameters: string[] = [];
-
-        _.each(data, (value: string, key: string) => {
-            if (!_.isUndefined(value)) {
-                parameters.push(encodeURIComponent(key) + "=" + encodeURIComponent(value));
-            }
-        });
-
-        return parameters.join("&");
-    }
-
-    private static formatString(format: string, ...params: string[]): string {
+    static formatString(format: string, ...params: string[]): string {
         var formatted: string = format;
         var index: number;
         var length: number;
@@ -338,8 +309,28 @@ class RestClient {
         return formatted;
     }
 
+    static serialize(data: any): string {
+        if (!utils.isObject(data)) {
+            return data;
+        }
+
+        if (utils.isNull(data) || utils.isUndefined(data)) {
+            return "";
+        }
+
+        var parameters: string[] = [];
+
+        utils.each(data, (value: string, key: string) => {
+            if (!utils.isUndefined(value)) {
+                parameters.push(encodeURIComponent(key) + "=" + encodeURIComponent(value));
+            }
+        });
+
+        return parameters.join("&");
+    }
+
     private getUri(uri: any): string {
-        if (_.isString(uri)) {
+        if (utils.isString(uri)) {
             if (uri.indexOf("/") === 0) {
                 return this.config.baseApiUri + uri;
             }
@@ -347,7 +338,7 @@ class RestClient {
             return uri;
         }
 
-        if (_.isObject(uri)) {
+        if (utils.isObject(uri)) {
             return this.config.baseApiUri + uri.url;
         }
 
@@ -361,13 +352,11 @@ class RestClient {
             return;
         }
 
-        _.each(schema, (definition: any, key: string) => {
+        utils.each(schema, (definition: any, key: string) => {
             var args: string[] = definition.args || [];
             var method: HttpMethod = definition.method || HttpMethod.Get;
             var script: string[] = [];
             var url = this.getUri(definition);
-            var i: number;
-            var length: number;
 
             if (args.length === 0) {
                 var getScript: string[];
@@ -386,7 +375,7 @@ class RestClient {
                 getScript = script.slice(0);
                 getScript.push("return this.ajax(url, " + method + ", options);\n");
 
-                if (_.has(this, key)) {
+                if (utils.hasProperty(this, key)) {
                     delete this[key];
                 }
                 this[key] = new Function("id", getScript.join(""));
@@ -408,13 +397,13 @@ class RestClient {
                     postScript.push("return this.ajax(url, " + HttpMethod.Post + ", options);\n");
                     putScript.push("return this.ajax(url, " + HttpMethod.Put + ", options);\n");
 
-                    if (_.has(this, deleteKey)) {
+                    if (utils.hasProperty(this, deleteKey)) {
                         delete this[deleteKey];
                     }
-                    if (_.has(this, postKey)) {
+                    if (utils.hasProperty(this, postKey)) {
                         delete this[postKey];
                     }
-                    if (_.has(this, putKey)) {
+                    if (utils.hasProperty(this, putKey)) {
                         delete this[putKey];
                     }
 
@@ -426,19 +415,21 @@ class RestClient {
             else {
                 // a route with custom query string parameters
                 var argsFiltered: boolean;
+                //noinspection JSMismatchedCollectionQueryUpdate
                 var filteredArgs: string[] = [];
+                //noinspection JSMismatchedCollectionQueryUpdate
                 var match: string[] = url.match(/\{\d\}/g);
                 var matchCount: number = (match) ? match.length : 0;
                 var parameters: string = "";
                 var regexp: RegExp = new RegExp("\\{\\d\\}");
 
                 if (matchCount < args.length) {
-                    for (i = 0; i < matchCount; i += 1) {
+                    for (var i: number = 0; i < matchCount; i += 1) {
                         filteredArgs.push(args.shift());
                     }
                 }
 
-                _.each(args, (arg: any) => {
+                utils.each(args, (arg: any) => {
                     if (parameters.length > 0) {
                         parameters += ", ";
                     }
@@ -456,16 +447,15 @@ class RestClient {
 
                     script.push("\t\"data\": {\n");
 
-                    for (i = 0,
-                             length = args.length; i < length; i += 1) {
+                    utils.each(args, (arg: any, i: number) => {
                         var index: number = (argsFiltered) ? i + matchCount : i;
-                        var name: string = args[i];
+                        var name: string = arg;
 
                         if (json.length > 0) {
                             json.push(",\n");
                         }
                         json.push("\t\t\"" + name + "\": arguments[" + index + "]");
-                    }
+                    });
 
                     script.push(json.join(""));
                     script.push("\t\n},");
@@ -483,12 +473,12 @@ class RestClient {
                     script.push("\tfilteredArgs.push(passedArgs.shift());\n");
                     script.push("}\n");
                     script.push("args = args.concat(filteredArgs);\n");
-                    script.push("url = this.formatString.apply(this, args);\n");
+                    script.push("url = RestClient.formatString.apply(this, args);\n");
                 }
 
                 script.push("return this.ajax(url, " + method + ", options);\n");
 
-                if (_.has(this, key)) {
+                if (utils.hasProperty(this, key)) {
                     delete this[key];
                 }
                 this[key] = new Function(parameters, script.join(""));

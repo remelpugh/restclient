@@ -1,0 +1,4 @@
+﻿interface ISchema {
+}
+
+export = ISchema;

@@ -1,10 +1,10 @@
-﻿import HeaderNameValue = require("HeaderNameValue");
+﻿import IHeaderNameValue = require("IHeaderNameValue");
 
 interface IAjaxOptions {
-    contentType?: string
-    data?: Object
-    headers?: HeaderNameValue[]
-    schemaDefinition?: string
+    contentType?: string;
+    data?: Object;
+    headers?: IHeaderNameValue[];
+    schemaDefinition?: string;
 }
 
 export = IAjaxOptions;
