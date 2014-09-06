@@ -6,8 +6,8 @@ wrapper methods to make easy GET, POST, PUT, and DELETE HTTP calls.
 
 ##### Browser
 
-Download the latest [RestClient.js](http://github.com/remelpugh/restclient/blob/master/dist/RestClient.js) file. 
-Minified [here](http://github.com/remelpugh/restclient/blob/master/dist/RestClient.min.js)
+Download the latest [RestClient.js](https://raw.githubusercontent.com/remelpugh/restclient/master/dist/RestClient.jss) file. 
+Minified [here](https://raw.githubusercontent.com/remelpugh/restclient/master/dist/RestClient.min.js)
 
 ##### Dependencies:
 
