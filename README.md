@@ -26,9 +26,7 @@ RestClient.get("API URL", {
     }).then(function (data) {
         // data is the raw response from the server
     });
-```
-
-```javascript
+    
 // GENERIC POST
 RestClient.post("API URL", {
         data: {
@@ -37,9 +35,7 @@ RestClient.post("API URL", {
     }).then(function (data) {
         // data is the raw response from the server
     });
-```
-
-```javascript
+    
 // GENERIC PUT
 RestClient.put("API URL", {
         data: {
@@ -48,9 +44,7 @@ RestClient.put("API URL", {
     }).then(function (data) {
         // data is the raw response from the server
     });
-```
-
-```javascript
+    
 // GENERIC DELETE
 RestClient.remove("API URL", {
         data: {
