@@ -19,19 +19,46 @@ Examples:
 
 ```javascript
 // GENERIC GET
-RestClient.get("http://api.rangelog.dabay6.local/referencedata/stateprovince", {
+RestClient.get("API URL", {
         data: {
-            page: 0,
-            size: 5
+            "JSON": "CONVERTED TO QUERYSTRING PARAMETERS"
         }
     }).then(function (data) {
-        console.log(JSON.parse(data));
+        // data is the raw response from the server
     });
 ```
 // GENERIC POST
+```javascript
+// GENERIC GET
+RestClient.get("API URL", {
+        data: {
+            "JSON": "CONVERTED TO QUERYSTRING PARAMETERS"
+        }
+    }).then(function (data) {
+        // data is the raw response from the server
+    });
+```
 
 // GENERIC PUT
+```javascript
+// GENERIC GET
+RestClient.get("API URL", {
+        data: {
+            "JSON": "CONVERTED TO QUERYSTRING PARAMETERS"
+        }
+    }).then(function (data) {
+        // data is the raw response from the server
+    });
+```
 
 // GENERIC DELETE
-
+```javascript
+// GENERIC GET
+RestClient.get("API URL", {
+        data: {
+            "JSON": "CONVERTED TO QUERYSTRING PARAMETERS"
+        }
+    }).then(function (data) {
+        // data is the raw response from the server
+    });
 ```
