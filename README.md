@@ -27,36 +27,34 @@ RestClient.get("API URL", {
         // data is the raw response from the server
     });
 ```
+
+```javascript
 // GENERIC POST
-```javascript
-// GENERIC GET
-RestClient.get("API URL", {
+RestClient.post("API URL", {
         data: {
-            "JSON": "CONVERTED TO QUERYSTRING PARAMETERS"
+            "JSON": "SENT IN BODY"
         }
     }).then(function (data) {
         // data is the raw response from the server
     });
 ```
 
+```javascript
 // GENERIC PUT
-```javascript
-// GENERIC GET
-RestClient.get("API URL", {
+RestClient.put("API URL", {
         data: {
-            "JSON": "CONVERTED TO QUERYSTRING PARAMETERS"
+            "JSON": "SENT IN BODY"
         }
     }).then(function (data) {
         // data is the raw response from the server
     });
 ```
 
-// GENERIC DELETE
 ```javascript
-// GENERIC GET
-RestClient.get("API URL", {
+// GENERIC DELETE
+RestClient.remove("API URL", {
         data: {
-            "JSON": "CONVERTED TO QUERYSTRING PARAMETERS"
+            "JSON": "SENT IN BODY"
         }
     }).then(function (data) {
         // data is the raw response from the server
