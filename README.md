@@ -20,6 +20,79 @@ Minified [here](https://raw.githubusercontent.com/remelpugh/restclient/master/di
 * Chrome 23+
 * Firefox 21+
 
+### Setup
+Create a new RestClient passing in the schema description of your API.
+
+```javascript
+var client = new RestClient({
+        config: {
+                baseApiUrl: "http://localhost/api",    // required
+                cacheData: true                        // OPTIONAL: indicate if data should be cached to localStorage
+        },
+        schema: {
+                country: {
+                        autoGenerateCrud: true         // OPTIONAL: if true add, updating, deleting countries will be created
+                        url: "/country"                 // required
+                },
+                countryPaged: {
+                        args: ["page", "size", "q"],   // OPTIONAL: arguments that can be passed to function
+                        parse: function(data) {        // OPTIONAL: a callback to provide extra data parsing
+                                return data.Results    // data.Results would contain the actual list of countries
+                        },
+                        sort: {                        // OPTIONAL: can also be an array of sort options
+                                direction: "desc",     // valid options "asc", "desc"
+                                field: "States.length" // a property of the data return dot notation is possible 
+                        }
+                        url: "/country"                 // required
+                },
+                statesByCountry: {
+                        args: ["id", "page", "size"],   // OPTIONAL: arguments that can be passed to function
+                        url: "/country/{0}/states"      // required, when using the .NET string format notation arguments
+                                                        // passed in will become part of the url, in this example on the
+                                                        // "id" parameter will be part of the url the rest will be query
+                                                        // string paraemters
+                }
+        }
+});
+
+// get all countries
+client.country().then(function(data) {
+        // JSON array of countries
+}).catch(function(e) {
+        // catch any possible unhandled exceptions
+}).error(function(error) {
+        // will reach here if the API returns a status code that isn't a 200
+});
+
+// add new country
+client.postCountry({
+        name: "NEW COUNTRY"
+}).then(function(data) {
+        // add was successful
+}).catch(function(e) {
+        // catch any possible unhandled exceptions
+}).error(function(error) {
+        // will reach here if the API returns a status code that isn't a 200
+});
+
+// get country by id
+client.country(1).then(function(data) {
+        // JSON country
+}).catch(function(e) {
+        // catch any possible unhandled exceptions
+}).error(function(error) {
+        // will reach here if the API returns a status code that isn't a 200
+});
+
+client.statesByCountry(1, 0, 5).then(data) {
+        // JSON array of states
+}).catch(function(e) {
+        // catch any possible unhandled exceptions
+}).error(function(error) {
+        // will reach here if the API returns a status code that isn't a 200
+});
+```
+
 ##### Generic Examples:
 
 ```javascript
