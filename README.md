@@ -4,6 +4,11 @@ RestClient
 A REST-ful HTTP client for JavaScript. Your API can be easily described using simple JSON. Also provides convenient
 wrapper methods to make easy GET, POST, PUT, and DELETE HTTP calls.
 
+##### Browser
+
+Download the latest [RestClient.js](http://github.com/remelpugh/restclient/blob/master/dist/RestClient.js) file. 
+Minified [here](http://github.com/remelpugh/restclient/blob/master/dist/RestClient.min.js)
+
 ##### Dependencies:
 
 * [lodash](http://lodash.com/): ~2.4.1
@@ -15,10 +20,10 @@ wrapper methods to make easy GET, POST, PUT, and DELETE HTTP calls.
 * Chrome 23+
 * Firefox 21+
 
-Examples:
+##### Generic Examples:
 
 ```javascript
-// GENERIC GET
+// GET
 RestClient.get("API URL", {
         data: {
             "JSON": "CONVERTED TO QUERYSTRING PARAMETERS"
@@ -27,7 +32,7 @@ RestClient.get("API URL", {
         // data is the raw response from the server
     });
     
-// GENERIC POST
+// POST
 RestClient.post("API URL", {
         data: {
             "JSON": "SENT IN BODY"
@@ -36,7 +41,7 @@ RestClient.post("API URL", {
         // data is the raw response from the server
     });
     
-// GENERIC PUT
+// PUT
 RestClient.put("API URL", {
         data: {
             "JSON": "SENT IN BODY"
@@ -45,7 +50,7 @@ RestClient.put("API URL", {
         // data is the raw response from the server
     });
     
-// GENERIC DELETE
+// DELETE
 RestClient.remove("API URL", {
         data: {
             "JSON": "SENT IN BODY"
