@@ -1,7 +1,7 @@
 {
   "name": "RestClient",
-  "version": "0.1.64",
-  "description": "A RESTful HTTP client for JavaScript.",
+  "version": "0.1.69",
+  "description": "A REST-ful HTTP client for JavaScript.",
   "main": "RestClient.js",
   "moduleType": [
     "commonjs"
@@ -24,8 +24,8 @@
     "tests"
   ],
   "dependencies": {
-    "vow": "~0.4.5",
-    "when": "~3.4.4"
+    "lodash": "~2.4.1",
+    "bluebird": "~2.3.2"
   },
   "overrides": {
     "lodash": {

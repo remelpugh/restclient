@@ -44,7 +44,7 @@
     "url": "https://github.com/remelpugh/restclient.git"
   },
   "title": "JavaScript RestClient",
-  "version": "0.1.64",
+  "version": "0.1.69",
   "dependencies": {},
   "browser": {
     "lodash": "./build/lodash.js",

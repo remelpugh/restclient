@@ -7,62 +7,242 @@ import IHeaderNameValue = require("./IHeaderNameValue");
 import HttpMethod = require("./HttpMethod");
 import IRestClientConfig = require("./IRestClientConfig");
 import IRestClientOptions = require("./IRestClientOptions");
-import Schema = require("./ISchema");
+import ISchema = require("./ISchema");
 import utils = require("./Utilities");
+import OptionsNotSuppliedException = require("./OptionsNotSuppliedException");
 
 /**
- * A RESTful HTTP client for JavaScript.
+ * A REST-ful HTTP client for JavaScript.
  */
 class RestClient {
     cache: Storage = window.localStorage;
     config: IRestClientConfig;
-    defaultAjaxOptions: IAjaxOptions;
-    defaultHeaders: IHeaderNameValue[];
     headers: IHeaderNameValue[];
-    schema: Schema;
+    schema: ISchema;
 
+    /**
+     * Default initializer.
+     * @param clientOptions The {IRestClientOptions} used to initialize this instance of {RestClient}.
+     */
     constructor(clientOptions: IRestClientOptions) {
         var options: IRestClientOptions = clientOptions;
 
+        if (_.isUndefined(clientOptions)) {
+            throw new OptionsNotSuppliedException();
+        }
+
         this.config = options.config;
-        this.schema = options.schema;
-        this.headers = options.headers;
-
-        this.defaultHeaders = [
-            {
-                name: "Accept-Encoding",
-                value: "gzip"
-            }
-        ];
-        utils.merge(this.headers, this.defaultHeaders);
-
-        this.defaultAjaxOptions = {
-            contentType: "application/json",
-            headers: this.headers
-        };
+        this.schema = options.schema || {};
+        this.headers = options.headers || [];
         this.parseSchema();
     }
 
-    ajax(url: string, httpMethod: HttpMethod, options: IAjaxOptions = {}): vow.Promise {
+    /**
+     * Performs a AJAX call to the specified endpoint, based on the supplied {IRestClientOptions} supplied
+     * in initialization.
+     * @param url The url to be used.
+     * @param httpMethod The HTTP method for the request.
+     * @param options The {IAjaxOptions} for customizing the request.
+     * @returns A promise.
+     */
+    ajax(url: string, httpMethod: HttpMethod, options: IAjaxOptions = {}): Promise<any> {
         var cacheData: boolean = this.config.cacheData;
         var cacheKey: string;
-        var method: string;
         var schemaDefinition: ISchemaDefinition;
-
-        utils.merge(options, this.defaultAjaxOptions);
-
-        if (!utils.isEmpty(options.data) && httpMethod === HttpMethod.Get) {
-            var query: string = RestClient.serialize(options.data);
-
-            url = url + "?" + query;
-        }
 
         if (cacheData) {
             cacheKey = "RestClient_" + url;
         }
 
-        if (!utils.isEmpty(options.schemaDefinition)) {
+        if (!_.isEmpty(options.schemaDefinition)) {
             schemaDefinition = this.schema[options.schemaDefinition];
+        }
+
+        if (_.isUndefined(options.headers)) {
+            options.headers = [];
+        }
+
+        var parseData = (data: string): any => {
+            var isSchemaDefined: boolean = !_.isUndefined(schemaDefinition);
+            var parsed: any = JSON.parse(data);
+
+            if (isSchemaDefined) {
+                if (typeof schemaDefinition.parse === "function") {
+                    parsed = schemaDefinition.parse(parsed);
+                }
+                if (typeof schemaDefinition.sort !== "undefined" && _.isArray(parsed)) {
+                    var sortOrder: any = schemaDefinition.sort;
+
+                    if (!_.isArray(sortOrder)) {
+                        sortOrder = [sortOrder];
+                    }
+                    _.each(sortOrder, (order: ISortOrder) => {
+                        parsed.sort((a: any, b: any) => {
+                            var dir: number = (order.direction.toLowerCase() === "asc") ? 1 : -1;
+                            var fields: string[] = order.field.split(".");
+                            var fieldValue = (obj: any, property: string): string => {
+                                return obj[property];
+                            };
+
+                            _.each(fields, (field: string) => {
+                                a = fieldValue(a, field);
+                                b = fieldValue(b, field);
+                            });
+
+                            if (a < b) {
+                                return dir * -1;
+                            }
+                            if (a > b) {
+                                return dir;
+                            }
+
+                            return 0;
+                        });
+                    });
+                }
+            }
+
+            return parsed;
+        };
+
+        return new Promise((resolve, reject) => {
+            var headers: IHeaderNameValue[];
+
+            headers = options.headers.concat(this.headers);
+            options.headers = _.uniq(headers, "name");
+
+            if (cacheData) {
+                // attempt to retrieve data from cache
+                try {
+                    resolve(parseData(this.cache.getItem(cacheKey)));
+
+                    return;
+                }
+                catch (e) {
+                    // swallow error and continue to retrieve from server
+                    //notify("Failed to retrieve data from cache, contacting server");
+                }
+            }
+
+            RestClient.ajax(url, httpMethod, options).then((response: string) => {
+                try {
+                    if (this.config.cacheData && httpMethod === HttpMethod.Get) {
+                        this.cache.setItem(cacheKey, response);
+                    }
+
+                    resolve(parseData(response));
+                }
+                catch (ex) {
+                    reject({
+                        errors: ["Invalid JSON: " + ex.message]
+                    });
+                }
+            }).error((error: any) => {
+                reject(error);
+            });
+        });
+    }
+
+    /**
+     * Convenience method wrapper around ajax to perform a GET request.
+     * @param url The url to be used.
+     * @param options The {IAjaxOptions} for customizing the request.
+     * @returns A promise.
+     */
+    get(url: string, options: IAjaxOptions = {}): Promise<any> {
+        return this.ajax(this.getUri(url), HttpMethod.Get, options);
+    }
+
+    /**
+     * Convenience method wrapper around ajax to perform a POST request.
+     * @param url The url to be used.
+     * @param data The data to be added.
+     * @param options The {IAjaxOptions} for customizing the request.
+     * @returns A promise.
+     */
+    post(url: string, data: any, options: IAjaxOptions = {}): Promise<any> {
+        var settings: IAjaxOptions;
+
+        settings = {
+            data: JSON.stringify(data)
+        };
+
+        _.defaults(options, settings);
+
+        return this.ajax(this.getUri(url), HttpMethod.Post, settings);
+    }
+
+    /**
+     * Convenience method wrapper around ajax to perform a PUT request.
+     * @param url The url to be used.
+     * @param data The data to be updated.
+     * @param options The {IAjaxOptions} for customizing the request.
+     * @returns A promise.
+     */
+    put(url: string, data: any, options: IAjaxOptions = {}): Promise<any> {
+        var settings: IAjaxOptions;
+
+        settings = {
+            data: JSON.stringify(data)
+        };
+
+        _.defaults(options, settings);
+
+        return this.ajax(this.getUri(url), HttpMethod.Put, settings);
+    }
+
+    /**
+     * Convenience method wrapper around ajax to perform a DELETE request.
+     * @param url The url to be used.
+     * @param data The data to be deleted.
+     * @param options The {IAjaxOptions} for customizing the request.
+     * @returns A promise.
+     */
+    remove(url: string, data: any, options: IAjaxOptions = {}): Promise<any> {
+        var settings: IAjaxOptions;
+
+        settings = {
+            data: JSON.stringify(data)
+        };
+
+        _.defaults(options, settings);
+
+        return this.ajax(this.getUri(url), HttpMethod.Delete, options);
+    }
+
+    /**
+     * Update the {ISchema} of the client after the object has been instantiated.
+     * @param schema The new API schema definition.
+     */
+    updateSchema(schema: ISchema) {
+        var currentKeys: string[] = _.keys(this.schema);
+        var newKeys: string[] = _.keys(schema);
+        var remove: string[] = _.difference(currentKeys, newKeys);
+
+        _.each(remove, (key: string) => {
+            delete this[key];
+        });
+
+        this.schema = schema;
+        this.parseSchema();
+    }
+
+    /**
+     * Execute any arbitrary AJAX call to the specified URI.
+     * @param url The URI to be called.
+     * @param httpMethod The http method to be used to access the URI.
+     * @param options The AJAX options to customize the request.
+     * @returns A promise.
+     */
+    static ajax(url: string, httpMethod: HttpMethod, options: IAjaxOptions = {}): Promise<any> {
+        var method: string;
+
+        _.defaults(options, RestClient.defaults.AjaxOptions);
+
+        if (!_.isEmpty(options.data) && httpMethod === HttpMethod.Get) {
+            var query: string = utils.serialize(options.data);
+
+            url = url + ((url.indexOf("?") >= 0) ? "" : "?") + query;
         }
 
         switch (httpMethod) {
@@ -80,63 +260,13 @@ class RestClient {
                 break;
         }
 
-        var parseData = (data: string): any => {
-            var isSchemaDefined: boolean = !utils.isUndefined(schemaDefinition);
-            var parsed: any = JSON.parse(data);
-
-            if (isSchemaDefined) {
-                if (typeof schemaDefinition.parse === "function") {
-                    parsed = schemaDefinition.parse(parsed);
-                }
-                if (typeof schemaDefinition.sort !== "undefined" && utils.isArray(parsed)) {
-                    var sort: any = schemaDefinition.sort;
-
-                    if (!utils.isArray(sort)) {
-                        sort = [sort];
-                    }
-
-                    for (var i: number = 0, length: number = sort.length; i < length; i += 1) {
-                        var order: ISortOrder = sort[i];
-
-                        parsed.sort((a: any, b: any) => {
-                            var dir: number = (order.direction.toLowerCase() === "asc") ? 1 : -1;
-                            var field = order.field;
-
-                            if (a[field] < b[field]) {
-                                return dir * -1;
-                            }
-                            if (a[field] > b[field]) {
-                                return dir;
-                            }
-
-                            return 0;
-                        });
-                    }
-                }
-            }
-
-            return parsed;
-        };
-
-        return new vow.Promise((resolve, reject, notify) => {
+        //noinspection JSUnusedLocalSymbols
+        return new Promise((resolve, reject) => {
             var errorResponse: IErrorResponse;
-
-            if (cacheData) {
-                // attempt to retrieve data from cache
-                try {
-                    resolve(parseData(this.cache.getItem(cacheKey)));
-
-                    return;
-                }
-                catch (e) {
-                    // swallow error and continue to retrieve from server
-                    notify("Failed to retrieve data from cache, contacting server");
-                }
-            }
 
             var request = RestClient.createXmlHttpRequest(method, url);
 
-            if (utils.isNull(request)) {
+            if (_.isNull(request)) {
                 reject(new Error("Failed to create a connection to the server."));
 
                 return;
@@ -183,35 +313,20 @@ class RestClient {
                     default:
                         // status 200 OK, 201 CREATED, 20* ALL OK
                         if ((status >= 200 && status <= 299) || status === 304) {
-                            try {
-                                if (this.config.cacheData && httpMethod === HttpMethod.Get) {
-                                    this.cache.setItem(cacheKey, request.responseText);
-                                }
-
-                                resolve(parseData(request.responseText));
-                            }
-                            catch (ex) {
-                                errorResponse = {
-                                    errors: ["Invalid JSON"]
-                                };
-
-                                reject(errorResponse);
-                            }
+                            resolve(request.response);
                         }
                         break;
                 }
             };
 
-            if (!utils.isEmpty(options.contentType)) {
+            if (!_.isEmpty(options.contentType)) {
                 request.setRequestHeader("content-type", options.contentType);
             }
 
-            if (!utils.isEmpty(options.headers)) {
-                var headers: IHeaderNameValue[] = options.headers;
+            var headers: IHeaderNameValue[] = options.headers;
 
-                headers = headers || [];
-
-                utils.each(headers, (header: IHeaderNameValue) => {
+            if (!_.isEmpty(headers)) {
+                _.each(headers, (header: IHeaderNameValue) => {
                     request.setRequestHeader(header.name, header.value);
                 });
             }
@@ -220,66 +335,19 @@ class RestClient {
         });
     }
 
-    get(url: string, options: IAjaxOptions = {}): vow.Promise {
-        return this.ajax(this.getUri(url), HttpMethod.Get, options);
-    }
-
-    post(url: string, data: any, options: IAjaxOptions = {}): vow.Promise {
-        var settings: IAjaxOptions;
-
-        settings = {
-            data: JSON.stringify(data)
-        };
-
-        utils.merge(options, settings);
-
-        return this.ajax(this.getUri(url), HttpMethod.Post, settings);
-    }
-
-    put(url: string, data: any, options: IAjaxOptions = {}): vow.Promise {
-        var settings: IAjaxOptions;
-
-        settings = {
-            data: JSON.stringify(data)
-        };
-
-        utils.merge(options, settings);
-
-        return this.ajax(this.getUri(url), HttpMethod.Put, settings);
-    }
-
-    remove(url: string, data: any, options: IAjaxOptions = {}): vow.Promise {
-        var settings: IAjaxOptions;
-
-        settings = {
-            data: JSON.stringify(data)
-        };
-
-        utils.merge(options, settings);
-
-        return this.ajax(this.getUri(url), HttpMethod.Delete, options);
-    }
-
-    updateSchema(schema: Schema) {
-        var currentKeys: string[] = utils.keys(this.schema);
-        var newKeys: string[] = utils.keys(schema);
-        var remove: string[] = utils.difference(currentKeys, newKeys);
-
-        utils.each(remove, (key: string) => {
-            delete this[key];
-        });
-
-        this.schema = schema;
-        this.parseSchema();
-    }
-
+    /**
+     * Create a {XMLHttpRequest} object.
+     * @param method The http method used by the request.
+     * @param url The url to be requested.
+     * @returns The created request if browser supports CORS, otherwise null.
+     */
     static createXmlHttpRequest(method: string, url: string): XMLHttpRequest {
         var xhr: any = new XMLHttpRequest();
 
-        if (utils.hasProperty(xhr, "withCredentials")) {
+        if (_.has(xhr, "withCredentials")) {
             xhr.open(method, url, true);
         }
-        else if (!utils.isUndefined(XDomainRequest)) {
+        else if (!_.isUndefined(XDomainRequest)) {
             xhr = new XDomainRequest();
             xhr.open(method, url, true);
         }
@@ -289,6 +357,52 @@ class RestClient {
         }
 
         return xhr;
+    }
+
+    static defaults: any = {
+        AjaxOptions: {
+            contentType: "application/json"
+        }
+    };
+
+    /**
+     * Convenience method wrapper around RestClient.ajax to perform a GET request.
+     * @param url The URI to be called.
+     * @param options The AJAX options to customize the request.
+     * @returns A promise.
+     */
+    static get(url: string, options: IAjaxOptions = {}): Promise<any> {
+        return RestClient.ajax(url, HttpMethod.Get, options);
+    }
+
+    /**
+     * Convenience method wrapper around RestClient.ajax to perform a POST request.
+     * @param url The URI to be called.
+     * @param options The AJAX options to customize the request.
+     * @returns A promise.
+     */
+    static post(url: string, options: IAjaxOptions = {}): Promise<any> {
+        return RestClient.ajax(url, HttpMethod.Post, options);
+    }
+
+    /**
+     * Convenience method wrapper around RestClient.ajax to perform a PUT request.
+     * @param url The URI to be called.
+     * @param options The AJAX options to customize the request.
+     * @returns A promise.
+     */
+    static put(url: string, options: IAjaxOptions = {}): Promise<any> {
+        return RestClient.ajax(url, HttpMethod.Put, options);
+    }
+
+    /**
+     * Convenience method wrapper around RestClient.ajax to perform a DELETE request.
+     * @param url The URI to be called.
+     * @param options The AJAX options to customize the request.
+     * @returns A promise.
+     */
+    static remove(url: string, options: IAjaxOptions = {}): Promise<any> {
+        return RestClient.ajax(url, HttpMethod.Delete, options);
     }
 
     static formatString(format: string, ...params: string[]): string {
@@ -309,28 +423,8 @@ class RestClient {
         return formatted;
     }
 
-    static serialize(data: any): string {
-        if (!utils.isObject(data)) {
-            return data;
-        }
-
-        if (utils.isNull(data) || utils.isUndefined(data)) {
-            return "";
-        }
-
-        var parameters: string[] = [];
-
-        utils.each(data, (value: string, key: string) => {
-            if (!utils.isUndefined(value)) {
-                parameters.push(encodeURIComponent(key) + "=" + encodeURIComponent(value));
-            }
-        });
-
-        return parameters.join("&");
-    }
-
     private getUri(uri: any): string {
-        if (utils.isString(uri)) {
+        if (_.isString(uri)) {
             if (uri.indexOf("/") === 0) {
                 return this.config.baseApiUri + uri;
             }
@@ -338,7 +432,7 @@ class RestClient {
             return uri;
         }
 
-        if (utils.isObject(uri)) {
+        if (_.isObject(uri)) {
             return this.config.baseApiUri + uri.url;
         }
 
@@ -346,13 +440,13 @@ class RestClient {
     }
 
     private parseSchema() {
-        var schema: Schema = this.schema;
+        var schema: ISchema = this.schema;
 
         if (schema === undefined || schema === null) {
             return;
         }
 
-        utils.each(schema, (definition: any, key: string) => {
+        _.each(schema, (definition: any, key: string) => {
             var args: string[] = definition.args || [];
             var method: HttpMethod = definition.method || HttpMethod.Get;
             var script: string[] = [];
@@ -375,7 +469,7 @@ class RestClient {
                 getScript = script.slice(0);
                 getScript.push("return this.ajax(url, " + method + ", options);\n");
 
-                if (utils.hasProperty(this, key)) {
+                if (_.has(this, key)) {
                     delete this[key];
                 }
                 this[key] = new Function("id", getScript.join(""));
@@ -397,13 +491,13 @@ class RestClient {
                     postScript.push("return this.ajax(url, " + HttpMethod.Post + ", options);\n");
                     putScript.push("return this.ajax(url, " + HttpMethod.Put + ", options);\n");
 
-                    if (utils.hasProperty(this, deleteKey)) {
+                    if (_.has(this, deleteKey)) {
                         delete this[deleteKey];
                     }
-                    if (utils.hasProperty(this, postKey)) {
+                    if (_.has(this, postKey)) {
                         delete this[postKey];
                     }
-                    if (utils.hasProperty(this, putKey)) {
+                    if (_.has(this, putKey)) {
                         delete this[putKey];
                     }
 
@@ -429,7 +523,7 @@ class RestClient {
                     }
                 }
 
-                utils.each(args, (arg: any) => {
+                _.each(args, (arg: any) => {
                     if (parameters.length > 0) {
                         parameters += ", ";
                     }
@@ -447,7 +541,7 @@ class RestClient {
 
                     script.push("\t\"data\": {\n");
 
-                    utils.each(args, (arg: any, i: number) => {
+                    _.each(args, (arg: any, i: number) => {
                         var index: number = (argsFiltered) ? i + matchCount : i;
                         var name: string = arg;
 
@@ -478,7 +572,7 @@ class RestClient {
 
                 script.push("return this.ajax(url, " + method + ", options);\n");
 
-                if (utils.hasProperty(this, key)) {
+                if (_.has(this, key)) {
                     delete this[key];
                 }
                 this[key] = new Function(parameters, script.join(""));

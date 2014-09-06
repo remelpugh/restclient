@@ -2,10 +2,10 @@
 import IRestClientConfig = require("IRestClientConfig");
 import Schema = require("ISchema");
 
-class IRestClientOptions {
+interface IRestClientOptions {
     config: IRestClientConfig;
-    headers: IHeaderNameValue[];
-    schema: Schema;
+    headers?: IHeaderNameValue[];
+    schema?: Schema;
 }
 
 export = IRestClientOptions;

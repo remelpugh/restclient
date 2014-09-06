@@ -6,7 +6,8 @@
 </head>
 <body>
 
-<script src="../bower_components/vow/vow.min.js" type="text/javascript"></script>
+<script src="../bower_components/lodash/dist/lodash.min.js" type="text/javascript"></script>
+<script src="../bower_components/bluebird/js/browser/bluebird.js" type="text/javascript"></script>
 <script src="../dist/RestClient.js" type="text/javascript"></script>
 <script type="text/javascript">
     "use strict";
@@ -22,20 +23,16 @@
             },
             countryPaged: {
                 args: ["page", "size", "q"],
-                url: "/referencedata/country"
-                /*,
-                 parse: function(response) {
-                 return response.Results;
-                 },
-                 sort: [
-                 {
-                 direction: "asc",
-                 field: "CountryId"
-                 }, {
-                 direction: "desc",
-                 field: "CountryName"
-                 }
-                 ]*/
+                url: "/referencedata/country",
+                parse: function (response) {
+                    return response.Results;
+                },
+                sort: [
+                    {
+                        direction: "desc",
+                        field: "StateProvinces.length"
+                    }
+                ]
             },
             statesByCountry: {
                 args: ["id", "page", "size"],
@@ -44,22 +41,37 @@
         }
     });
 
-    client.country(1).then(function (data) {
-        console.log(data);
-    }).fail(function (error) {
-        console.log(error);
-    });
-
+//    client.country(1).then(function (data) {
+//        console.log(data);
+//    }).catch(function (e) {
+//        console.log(e);
+//    }).error(function (error) {
+//        console.log(error);
+//    });
+//
     client.countryPaged(0, 5).then(function (data) {
         console.log(data);
-    }).fail(function (error) {
+    }).catch(function (e) {
+        console.log(e);
+    }).error(function (error) {
         console.log(error);
     });
+//
+//    client.statesByCountry(1, 0, 5).then(function (data) {
+//        console.log(data);
+//    }).catch(function (e) {
+//        console.log(e);
+//    }).error(function (error) {
+//        console.log(error);
+//    });
 
-    client.statesByCountry(1, 0, 5).then(function (data) {
-        console.log(data);
-    }).fail(function (error) {
-        console.log(error);
+    RestClient.get("http://api.rangelog.dabay6.local/referencedata/stateprovince", {
+        data: {
+            page: 0,
+            size: 5
+        }
+    }).then(function (data) {
+//        console.log(JSON.parse(data));
     });
 </script>
 </body>

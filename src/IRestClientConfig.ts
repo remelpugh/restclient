@@ -1,6 +1,6 @@
-﻿class IRestClientConfig {
+﻿interface IRestClientConfig {
     baseApiUri: string;
-    cacheData: boolean;
+    cacheData?: boolean;
 }
 
 export = IRestClientConfig;

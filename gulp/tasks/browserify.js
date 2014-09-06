@@ -65,11 +65,11 @@ gulp.task("browserify", ["compile"], function () {
         standalone: "RestClient"
     });
 
-    b = watchify(b);
+    //b = watchify(b);
     b.add("./RestClient.js");
-    b.on("update", function () {
-        bundleShare(b);
-    });
+//    b.on("update", function () {
+//        bundleShare(b);
+//    });
 
     bundleShare(b);
 
