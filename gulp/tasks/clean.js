@@ -2,10 +2,9 @@
  * Created by remelpugh on 9/2/2014.
  */
 var gulp = require("gulp");
-var rimraf = require("gulp-rimraf");
+var del = require("del");
 
-gulp.task("clean", function() {
+gulp.task("clean", function(callback) {
     "use strict";
-    return gulp.src("./build/*")
-        .pipe(rimraf());
+    del(["./build/*"], callback);
 });

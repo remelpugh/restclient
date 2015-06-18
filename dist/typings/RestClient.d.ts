@@ -1,29 +1,31 @@
+/// <reference path="../typings/tsd.d.ts" />
 import IAjaxOptions = require("./IAjaxOptions");
 import IHeaderNameValue = require("./IHeaderNameValue");
-import HttpMethod = require("./HttpMethod");
 import IRestClientConfig = require("./IRestClientConfig");
 import IRestClientOptions = require("./IRestClientOptions");
 import ISchema = require("./ISchema");
 declare class RestClient {
-    public cache: Storage;
-    public config: IRestClientConfig;
-    public headers: IHeaderNameValue[];
-    public schema: ISchema;
+    static test: string;
+    cache: Storage;
+    config: IRestClientConfig;
+    headers: IHeaderNameValue[];
+    queryString: any;
+    schema: ISchema;
+    private utils;
     constructor(clientOptions: IRestClientOptions);
-    public ajax(url: string, httpMethod: HttpMethod, options?: IAjaxOptions): Promise<any>;
-    public get(url: string, options?: IAjaxOptions): Promise<any>;
-    public post(url: string, data: any, options?: IAjaxOptions): Promise<any>;
-    public put(url: string, data: any, options?: IAjaxOptions): Promise<any>;
-    public remove(url: string, data: any, options?: IAjaxOptions): Promise<any>;
-    public updateSchema(schema: ISchema): void;
-    static ajax(url: string, httpMethod: HttpMethod, options?: IAjaxOptions): Promise<any>;
+    ajax(url: string, method: string, options?: IAjaxOptions): Promise<any>;
+    get(url: string, options?: IAjaxOptions): Promise<any>;
+    post(url: string, data: any, options?: IAjaxOptions): Promise<any>;
+    put(url: string, data: any, options?: IAjaxOptions): Promise<any>;
+    remove(url: string, data: any, options?: IAjaxOptions): Promise<any>;
+    updateSchema(schema: ISchema): void;
+    static ajax(url: string, method: string, options?: IAjaxOptions): Promise<any>;
     static createXmlHttpRequest(method: string, url: string): XMLHttpRequest;
     static defaults: any;
     static get(url: string, options?: IAjaxOptions): Promise<any>;
     static post(url: string, options?: IAjaxOptions): Promise<any>;
     static put(url: string, options?: IAjaxOptions): Promise<any>;
     static remove(url: string, options?: IAjaxOptions): Promise<any>;
-    static formatString(format: string, ...params: string[]): string;
     private getUri(uri);
     private parseSchema();
 }

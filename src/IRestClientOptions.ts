@@ -5,6 +5,7 @@ import Schema = require("ISchema");
 interface IRestClientOptions {
     config: IRestClientConfig;
     headers?: IHeaderNameValue[];
+    queryString?: any;
     schema?: Schema;
 }
 

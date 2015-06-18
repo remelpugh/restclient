@@ -2,7 +2,7 @@
  * Created by remelpugh on 9/1/2014.
  */
 var gulp = require("gulp");
-var ts = require("gulp-type");
+var ts = require("gulp-typescript");
 
 var project = ts.createProject({
     declarationFiles: true,

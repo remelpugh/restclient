@@ -2,77 +2,152 @@
 <html>
 <head lang="en">
     <meta charset="UTF-8">
-    <title></title>
+    <title>RestClient</title>
+    <style type="text/css">
+        .country-container {
+            background-color: #fff;
+            box-shadow: 0 2px 2px #000;
+            margin-bottom: 10px;
+            margin-top: 10px;
+        }
+        .country {
+            font-weight: bold;
+        }
+        .state {
+            display: inline-block;
+            margin: 5px;
+            width: 200px;
+        }
+    </style>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css">
 </head>
-<body>
+<body style="background-color: #cccccc">
 
-<script src="../bower_components/lodash/dist/lodash.min.js" type="text/javascript"></script>
-<script src="../bower_components/bluebird/js/browser/bluebird.js" type="text/javascript"></script>
-<script src="../dist/RestClient.js" type="text/javascript"></script>
-<script type="text/javascript">
-    "use strict";
-    var client = new RestClient({
-        config: {
-            baseApiUri: "http://api.rangelog.dabay6.local",
-            cacheData: false
-        },
-        schema: {
-            country: {
-                autoGenerateCrud: false,
-                url: "/referencedata/country"
+    <div id="results" class="container">
+    </div>
+
+    <script src="../bower_components/lodash/dist/lodash.min.js" type="text/javascript"></script>
+    <script src="../bower_components/bluebird/js/browser/bluebird.js" type="text/javascript"></script>
+    <script src="../dist/RestClient.js" type="text/javascript"></script>
+    <script src="config.js" type="text/javascript"></script>
+    <script type="text/javascript">
+        "use strict";
+        var client = new RestClient({
+            config: {
+                baseApiUri: config.Parse.baseUri, //"https://api.parse.com/1"
+                cacheData: false
             },
-            countryPaged: {
-                args: ["page", "size", "q"],
-                url: "/referencedata/country",
-                parse: function (response) {
-                    return response.Results;
+            headers: [
+                {
+                    name: "X-Parse-Application-Id",
+                    value: config.Parse.appId
                 },
-                sort: [
-                    {
-                        direction: "desc",
-                        field: "StateProvinces.length"
-                    }
-                ]
-            },
-            statesByCountry: {
-                args: ["id", "page", "size"],
-                url: "/referencedata/country/{0}/stateprovinces"
+                {
+                    name: "X-Parse-REST-API-Key",
+                    value: config.Parse.restKey
+                }
+            ],
+            schema: {
+                country: {
+                    autoGenerateCrud: true,
+                    parse: function (data) {
+                        if (_.isArray(data.results)) {
+                            return data.results;
+                        }
+
+                        return data;
+                    },
+                    url: "/classes/Country"
+                },
+                countryPaged: {
+                    args: ["limit", "skip"],
+                    queryString: {
+                        count: 1
+                    },
+                    url: "/classes/Country"
+                },
+                stateProvince: {
+                    autoGenerateCrud: true,
+                    parse: function (data) {
+                        if (_.isArray(data.results)) {
+                            return data.results;
+                        }
+
+                        return data;
+                    },
+                    url: "/classes/StateProvince"
+                },
+                stateProvinceByCountry: {
+                    method: "POST",
+                    parse: function (data) {
+                        if (_.isArray(data.result)) {
+                            return data.result;
+                        }
+
+                        return data;
+                    },
+                    url: "/functions/statesByCountry"
+                },
+                test: {
+                    args: ["test", "blah"],
+                    url: "/classes/Country/{0}"
+                }
             }
-        }
-    });
+        });
+        var results = document.getElementById("results");
 
-//    client.country(1).then(function (data) {
-//        console.log(data);
-//    }).catch(function (e) {
-//        console.log(e);
-//    }).error(function (error) {
-//        console.log(error);
-//    });
-//
-    client.countryPaged(0, 5).then(function (data) {
-        console.log(data);
-    }).catch(function (e) {
-        console.log(e);
-    }).error(function (error) {
-        console.log(error);
-    });
-//
-//    client.statesByCountry(1, 0, 5).then(function (data) {
-//        console.log(data);
-//    }).catch(function (e) {
-//        console.log(e);
-//    }).error(function (error) {
-//        console.log(error);
-//    });
+        client.country({limit:300}).then(function(countries) {
+            _.each(countries, function (country) {
+                var container = document.createElement("div");
+                var countryContainer = document.createElement("div");
+                var stateContainer = document.createElement("div");
 
-    RestClient.get("http://api.rangelog.dabay6.local/referencedata/stateprovince", {
-        data: {
-            page: 0,
-            size: 5
-        }
-    }).then(function (data) {
-//        console.log(JSON.parse(data));
-    });
-</script>
+                container.setAttribute("class", "row country-container");
+
+                countryContainer.setAttribute("class", "col-xs-3 country");
+                countryContainer.textContent = country.CountryName;
+
+                stateContainer.setAttribute("class", "col-xs-9");
+                stateContainer.setAttribute("id", country.objectId);
+
+                container.appendChild(countryContainer);
+                container.appendChild(stateContainer);
+
+                results.appendChild(container);
+
+                client.stateProvinceByCountry({
+                    countryId: country.objectId
+                }).then(function(states) {
+                    _.each(states, function(state) {
+                        var stateDiv = document.createElement("div");
+
+                        stateDiv.setAttribute("class", "state");
+                        stateDiv.textContent = state.StateProvinceName;
+
+                        document.getElementById(country.objectId).appendChild(stateDiv);
+                    });
+                }).catch(function(e) {
+                    console.log(e);
+                });
+            });
+        });
+
+        client.countryPaged(25, 0).then(function(countries) {
+            console.log(countries);
+        });
+
+//        client.postCountry({
+//            CountryAbbreviation: "TESTING",
+//            CountryName: "TESTING"
+//        }).then(function(data) {
+//            return client.country(data.objectId);
+//        }).then(function(data) {
+//            console.log(data);
+//        }).catch(function (e) {
+//            console.log(e);
+//        }).error(function (error) {
+//            console.log(error);
+//        });
+    </script>
 </body>
 </html>

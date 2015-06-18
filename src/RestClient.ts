@@ -15,10 +15,15 @@ import OptionsNotSuppliedException = require("./OptionsNotSuppliedException");
  * A REST-ful HTTP client for JavaScript.
  */
 class RestClient {
+    static test = "TEST";
+
     cache: Storage = window.localStorage;
     config: IRestClientConfig;
     headers: IHeaderNameValue[];
+    queryString: any;
     schema: ISchema;
+
+    private utils: any = utils;
 
     /**
      * Default initializer.
@@ -32,8 +37,9 @@ class RestClient {
         }
 
         this.config = options.config;
-        this.schema = options.schema || {};
         this.headers = options.headers || [];
+        this.queryString = options.queryString || {};
+        this.schema = options.schema || {};
         this.parseSchema();
     }
 
@@ -41,13 +47,14 @@ class RestClient {
      * Performs a AJAX call to the specified endpoint, based on the supplied {IRestClientOptions} supplied
      * in initialization.
      * @param url The url to be used.
-     * @param httpMethod The HTTP method for the request.
+     * @param method The HTTP method for the request.
      * @param options The {IAjaxOptions} for customizing the request.
      * @returns A promise.
      */
-    ajax(url: string, httpMethod: HttpMethod, options: IAjaxOptions = {}): Promise<any> {
+    ajax(url: string, method: string, options: IAjaxOptions = {}): Promise<any> {
         var cacheData: boolean = this.config.cacheData;
         var cacheKey: string;
+        var httpMethod: HttpMethod = HttpMethod[method.toUpperCase()];
         var schemaDefinition: ISchemaDefinition;
 
         if (cacheData) {
@@ -107,9 +114,16 @@ class RestClient {
 
         return new Promise((resolve, reject) => {
             var headers: IHeaderNameValue[];
+            var query: any = {};
 
-            headers = options.headers.concat(this.headers);
+            headers = options.headers.concat(this.headers).concat(schemaDefinition.headers || []);
+
+            _.defaults(query, this.queryString);
+            _.defaults(query, schemaDefinition.queryString);
+            _.defaults(query, options.queryString);
+
             options.headers = _.uniq(headers, "name");
+            options.queryString = query;
 
             if (cacheData) {
                 // attempt to retrieve data from cache
@@ -124,9 +138,9 @@ class RestClient {
                 }
             }
 
-            RestClient.ajax(url, httpMethod, options).then((response: string) => {
+            RestClient.ajax(url, method, options).then((response: string) => {
                 try {
-                    if (this.config.cacheData && httpMethod === HttpMethod.Get) {
+                    if (this.config.cacheData && httpMethod === HttpMethod.GET) {
                         this.cache.setItem(cacheKey, response);
                     }
 
@@ -150,7 +164,7 @@ class RestClient {
      * @returns A promise.
      */
     get(url: string, options: IAjaxOptions = {}): Promise<any> {
-        return this.ajax(this.getUri(url), HttpMethod.Get, options);
+        return this.ajax(this.getUri(url), HttpMethod[HttpMethod.GET], options);
     }
 
     /**
@@ -169,7 +183,7 @@ class RestClient {
 
         _.defaults(options, settings);
 
-        return this.ajax(this.getUri(url), HttpMethod.Post, settings);
+        return this.ajax(this.getUri(url), HttpMethod[HttpMethod.POST], options);
     }
 
     /**
@@ -188,7 +202,7 @@ class RestClient {
 
         _.defaults(options, settings);
 
-        return this.ajax(this.getUri(url), HttpMethod.Put, settings);
+        return this.ajax(this.getUri(url), HttpMethod[HttpMethod.PUT], options);
     }
 
     /**
@@ -207,7 +221,7 @@ class RestClient {
 
         _.defaults(options, settings);
 
-        return this.ajax(this.getUri(url), HttpMethod.Delete, options);
+        return this.ajax(this.getUri(url), HttpMethod[HttpMethod.DELETE], options);
     }
 
     /**
@@ -230,34 +244,30 @@ class RestClient {
     /**
      * Execute any arbitrary AJAX call to the specified URI.
      * @param url The URI to be called.
-     * @param httpMethod The http method to be used to access the URI.
+     * @param method The http method to be used to access the URI.
      * @param options The AJAX options to customize the request.
      * @returns A promise.
      */
-    static ajax(url: string, httpMethod: HttpMethod, options: IAjaxOptions = {}): Promise<any> {
-        var method: string;
+    static ajax(url: string, method: string, options: IAjaxOptions = {}): Promise<any> {
+        var httpMethod: HttpMethod = HttpMethod[method.toUpperCase()];
+        var query: string;
 
         _.defaults(options, RestClient.defaults.AjaxOptions);
 
-        if (!_.isEmpty(options.data) && httpMethod === HttpMethod.Get) {
-            var query: string = utils.serialize(options.data);
+        if (!_.isEmpty(options.data) && httpMethod === HttpMethod.GET) {
+            query = utils.serialize(options.data);
 
-            url = url + ((url.indexOf("?") >= 0) ? "" : "?") + query;
+            if (!_.isUndefined(query) && query.length > 0) {
+                url = url + ((url.indexOf("?") >= 0) ? "" : "?") + query;
+            }
         }
 
-        switch (httpMethod) {
-            case HttpMethod.Delete:
-                method = "DELETE";
-                break;
-            case HttpMethod.Get:
-                method = "GET";
-                break;
-            case HttpMethod.Post:
-                method = "POST";
-                break;
-            case HttpMethod.Put:
-                method = "PUT";
-                break;
+        if (!_.isEmpty(options.queryString)) {
+            query = utils.serialize(options.queryString);
+
+            if (!_.isUndefined(query) && query.length > 0) {
+                url = url + ((url.indexOf("?") >= 0) ? "&" : "?") + query;
+            }
         }
 
         //noinspection JSUnusedLocalSymbols
@@ -331,7 +341,7 @@ class RestClient {
                 });
             }
 
-            request.send(httpMethod === HttpMethod.Get ? null : options.data);
+            request.send(<Document>(httpMethod === HttpMethod.GET ? null : options.data));
         });
     }
 
@@ -372,7 +382,7 @@ class RestClient {
      * @returns A promise.
      */
     static get(url: string, options: IAjaxOptions = {}): Promise<any> {
-        return RestClient.ajax(url, HttpMethod.Get, options);
+        return RestClient.ajax(url, HttpMethod[HttpMethod.GET], options);
     }
 
     /**
@@ -382,7 +392,7 @@ class RestClient {
      * @returns A promise.
      */
     static post(url: string, options: IAjaxOptions = {}): Promise<any> {
-        return RestClient.ajax(url, HttpMethod.Post, options);
+        return RestClient.ajax(url, HttpMethod[HttpMethod.POST], options);
     }
 
     /**
@@ -392,7 +402,7 @@ class RestClient {
      * @returns A promise.
      */
     static put(url: string, options: IAjaxOptions = {}): Promise<any> {
-        return RestClient.ajax(url, HttpMethod.Put, options);
+        return RestClient.ajax(url, HttpMethod[HttpMethod.PUT], options);
     }
 
     /**
@@ -402,25 +412,7 @@ class RestClient {
      * @returns A promise.
      */
     static remove(url: string, options: IAjaxOptions = {}): Promise<any> {
-        return RestClient.ajax(url, HttpMethod.Delete, options);
-    }
-
-    static formatString(format: string, ...params: string[]): string {
-        var formatted: string = format;
-        var index: number;
-        var length: number;
-        var regexp: RegExp;
-
-        length = params.length;
-
-        for (index = 0; index < length; index += 1) {
-            var value: string = params[index];
-
-            regexp = new RegExp("\\{(\\s)?" + index + "(\\s)?\\}", "gi");
-            formatted = formatted.replace(regexp, value);
-        }
-
-        return formatted;
+        return RestClient.ajax(url, HttpMethod[HttpMethod.DELETE], options);
     }
 
     private getUri(uri: any): string {
@@ -446,33 +438,62 @@ class RestClient {
             return;
         }
 
-        _.each(schema, (definition: any, key: string) => {
+        _.each(schema, (definition: ISchemaDefinition, key: string) => {
             var args: string[] = definition.args || [];
-            var method: HttpMethod = definition.method || HttpMethod.Get;
+            var httpMethod: HttpMethod;
+            var method: string = definition.method || "GET";
+            //noinspection JSMismatchedCollectionQueryUpdate
             var script: string[] = [];
+            //noinspection JSMismatchedCollectionQueryUpdate
+            var idScript: string[] = [];
             var url = this.getUri(definition);
 
+            httpMethod = HttpMethod[method.toUpperCase()];
+
             if (args.length === 0) {
-                var getScript: string[];
+                var executeScript: string[];
 
                 // a default route in the form of /{route}/{id:int}
-                script.push("var url = \"" + url + "\";\n");
-                script.push("var options = {\n");
-                script.push("\t\"data\": arguments[1],\n");
-                script.push("\t\"schemaDefinition\": \"" + key + "\"\n");
-                script.push("};\n");
+                script.push("\tvar url = \"" + url + "\";\n");
+                script.push("\tvar options = {\n");
+                script.push("\t\t\"schemaDefinition\": \"" + key + "\"\n");
+                script.push("\t};\n\n");
 
-                script.push("if (id) {\n");
-                script.push("\turl += \"/\" + id;\n");
-                script.push("}\n");
+                idScript.push("\tif (!_.isUndefined(arguments[0]) && !_.isObject(arguments[0])) {\n");
+                idScript.push("\t\toptions.data = arguments[1];\n");
+                idScript.push("\t\turl += \"/\" + arguments[0];\n");
+                idScript.push("\t}\n");
+                idScript.push("\telse if (_.isObject(arguments[0])) {\n");
+                idScript.push("\t\toptions.data = arguments[0];\n");
+                idScript.push("\t}\n");
 
-                getScript = script.slice(0);
-                getScript.push("return this.ajax(url, " + method + ", options);\n");
+                executeScript = script.slice(0);
+                executeScript.push(idScript.join(""));
+
+                switch (httpMethod) {
+                    case HttpMethod.DELETE:
+                        executeScript.push("\n\treturn this.remove(url, options);");
+                        break;
+                    case HttpMethod.POST:
+                        executeScript.push("\n\tvar data = options.data;\n");
+                        executeScript.push("\n\tdelete options.data;\n");
+                        executeScript.push("\n\treturn this.post(url, data, options);");
+                        break;
+                    case HttpMethod.PUT:
+                        executeScript.push("\n\tvar data = options.data;\n");
+                        executeScript.push("\n\tdelete options.data;\n");
+                        executeScript.push("\n\treturn this.put(url, data, options);");
+                        break;
+                    default:
+                        executeScript.push("\n\treturn this.get(url, options);");
+                        break;
+                }
 
                 if (_.has(this, key)) {
                     delete this[key];
                 }
-                this[key] = new Function("id", getScript.join(""));
+
+                this[key] = new Function("id", executeScript.join(""));
 
                 if (definition.autoGenerateCrud === true) {
                     var newKey = key.charAt(0).toUpperCase() + key.substring(1);
@@ -487,9 +508,13 @@ class RestClient {
                     postScript = script.slice(0);
                     putScript = script.slice(0);
 
-                    deleteScript.push("return this.ajax(url, " + HttpMethod.Delete + ", options);\n");
-                    postScript.push("return this.ajax(url, " + HttpMethod.Post + ", options);\n");
-                    putScript.push("return this.ajax(url, " + HttpMethod.Put + ", options);\n");
+                    deleteScript.push(idScript.join(""));
+                    deleteScript.push("return this.remove(url, data, options);\n");
+
+                    postScript.push("return this.post(url, data, options);\n");
+
+                    putScript.push(idScript.join(""));
+                    putScript.push("return this.put(url, data, options);\n");
 
                     if (_.has(this, deleteKey)) {
                         delete this[deleteKey];
@@ -502,7 +527,7 @@ class RestClient {
                     }
 
                     this["delete" + newKey] = new Function("id", deleteScript.join(""));
-                    this["post" + newKey] = new Function("id, data", postScript.join(""));
+                    this["post" + newKey] = new Function("data", postScript.join(""));
                     this["put" + newKey] = new Function("id, data", putScript.join(""));
                 }
             }
@@ -517,12 +542,14 @@ class RestClient {
                 var parameters: string = "";
                 var regexp: RegExp = new RegExp("\\{\\d\\}");
 
-                if (matchCount < args.length) {
+                // remove all arguments that will be used in formatting the url
+                if (matchCount <= args.length) {
                     for (var i: number = 0; i < matchCount; i += 1) {
                         filteredArgs.push(args.shift());
                     }
                 }
 
+                // create method arguments with the remaining args
                 _.each(args, (arg: any) => {
                     if (parameters.length > 0) {
                         parameters += ", ";
@@ -532,14 +559,16 @@ class RestClient {
 
                 argsFiltered = filteredArgs.length > 0;
 
-                script.push("var url = \"" + url + "\";\n");
-                script.push("var options = {\n");
+                script.push("\tvar url = \"" + url + "\";\n");
+                script.push("\tvar options = {\n");
 
+                // if there are any remaining args create json data
                 if (args.length > 0) {
                     // build data object containing query string pairs
+                    //noinspection JSMismatchedCollectionQueryUpdate
                     var json: string[] = [];
 
-                    script.push("\t\"data\": {\n");
+                    script.push("\t\t\"data\": {\n");
 
                     _.each(args, (arg: any, i: number) => {
                         var index: number = (argsFiltered) ? i + matchCount : i;
@@ -548,29 +577,29 @@ class RestClient {
                         if (json.length > 0) {
                             json.push(",\n");
                         }
-                        json.push("\t\t\"" + name + "\": arguments[" + index + "]");
+                        json.push("\t\t\t\"" + name + "\": arguments[" + index + "]");
                     });
 
                     script.push(json.join(""));
-                    script.push("\t\n},");
+                    script.push("\n\t\t},");
                     script.push("\n");
                 }
 
-                script.push("\t\"schemaDefinition\": \"" + key + "\"");
-                script.push("\n};\n");
+                script.push("\t\t\"schemaDefinition\": \"" + key + "\"");
+                script.push("\n\t};\n");
 
                 if (regexp.test(url)) {
-                    script.push("var args = [url];\n");
-                    script.push("var passedArgs = Array.prototype.slice.call(arguments);\n");
-                    script.push("var filteredArgs = [];\n");
-                    script.push("for (var i = 0; i < " + matchCount + "; i += 1) {\n");
-                    script.push("\tfilteredArgs.push(passedArgs.shift());\n");
-                    script.push("}\n");
-                    script.push("args = args.concat(filteredArgs);\n");
-                    script.push("url = RestClient.formatString.apply(this, args);\n");
+                    script.push("\tvar args = [url];\n");
+                    script.push("\tvar filteredArgs = [];\n");
+                    script.push("\tvar passedArgs = Array.prototype.slice.call(arguments);\n\n");
+                    script.push("\tfor (var i = 0; i < " + matchCount + "; i += 1) {\n");
+                    script.push("\t\tfilteredArgs.push(passedArgs.shift());\n");
+                    script.push("\t}\n");
+                    script.push("\targs = args.concat(filteredArgs);\n");
+                    script.push("\turl = utils.formatString.apply(null, args);\n\n");
                 }
 
-                script.push("return this.ajax(url, " + method + ", options);\n");
+                script.push("\treturn this.ajax(url, \"" + HttpMethod[httpMethod] + "\", options);");
 
                 if (_.has(this, key)) {
                     delete this[key];

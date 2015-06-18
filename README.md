@@ -4,6 +4,8 @@ RestClient
 A REST-ful HTTP client for JavaScript. Your API can be easily described using simple JSON. Also provides convenient
 wrapper methods to make easy GET, POST, PUT, and DELETE HTTP calls.
 
+Library inspired by [amygdala](https://github.com/lincolnloop/amygdala/blob/master/README.md)
+
 ##### Browser
 
 Download the latest [RestClient.js](https://raw.githubusercontent.com/remelpugh/restclient/master/dist/RestClient.js) file. 

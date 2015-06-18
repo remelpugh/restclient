@@ -1,0 +1,1 @@
+﻿var typedoc = typedoc || {};typedoc.search = typedoc.search || {};typedoc.search.data = {"kinds":{"32":"Dynamic module"},"rows":[{"id":0,"kind":32,"name":"\"RestClient\"","url":"modules\\_restclient_.html","classes":"tsd-kind-dynamic-module"}]};

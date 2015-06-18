@@ -1,7 +1,7 @@
 declare enum HttpMethod {
-    Delete = 0,
-    Get = 1,
-    Post = 2,
-    Put = 3,
+    DELETE = 0,
+    GET = 1,
+    POST = 2,
+    PUT = 3,
 }
 export = HttpMethod;

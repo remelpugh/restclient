@@ -1,5 +1,5 @@
 declare class IHeaderNameValue {
-    public name: string;
-    public value: string;
+    name: string;
+    value: string;
 }
 export = IHeaderNameValue;

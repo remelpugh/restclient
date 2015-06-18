@@ -10,7 +10,6 @@ var pkg = require("../../package.json");
 var rename = require("gulp-rename");
 var source = require("vinyl-source-stream");
 var uglify = require("gulp-uglify");
-var watchify = require("watchify");
 
 var production = process.env.NODE_ENV === "production";
 
@@ -19,7 +18,6 @@ function bundleShare(b) {
     bundleLogger.start();
 
     b.external("lodash")
-        .external("vow")
         .bundle()
         //        .on("prebundle", function (bundler) {
         //            if (production) {
@@ -65,11 +63,7 @@ gulp.task("browserify", ["compile"], function () {
         standalone: "RestClient"
     });
 
-    //b = watchify(b);
     b.add("./RestClient.js");
-//    b.on("update", function () {
-//        bundleShare(b);
-//    });
 
     bundleShare(b);
 

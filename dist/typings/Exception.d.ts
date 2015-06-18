@@ -1,7 +1,7 @@
 declare class Exception implements Error {
-    public name: string;
-    public message: string;
+    name: string;
+    message: string;
     constructor(message?: string);
-    public toString(): string;
+    toString(): string;
 }
 export = Exception;
