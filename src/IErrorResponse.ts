@@ -1,5 +1,5 @@
 ﻿interface IErrorResponse {
-    errors: string[]
+    errors: string[];
 }
 
 export = IErrorResponse;

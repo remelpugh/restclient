@@ -9,6 +9,7 @@ var handleErrors = require("../util/handleErrors");
 var pkg = require("../../package.json");
 var rename = require("gulp-rename");
 var source = require("vinyl-source-stream");
+var sourcemaps = require("gulp-sourcemaps");
 var uglify = require("gulp-uglify");
 
 var production = process.env.NODE_ENV === "production";
@@ -35,6 +36,11 @@ function bundleShare(b) {
 
         // Convert stream
         .pipe(buffer())
+        
+        // loads map from browserify file
+        .pipe(sourcemaps.init({
+            loadMaps: true
+        }))
 
         // Output to the build directory
         .pipe(gulp.dest("./dist"))
@@ -44,6 +50,8 @@ function bundleShare(b) {
 
         // Minify the bundled JavaScript
         .pipe(uglify())
+        
+        .pipe(sourcemaps.write('./')) // writes .map file
 
         // Output to the build directory
         .pipe(gulp.dest("./dist"))
@@ -67,5 +75,5 @@ gulp.task("browserify", ["compile"], function () {
 
     bundleShare(b);
 
-    gulp.watch(["src/**/*.ts"], ["browserify"]);
+    //gulp.watch(["src/**/*.ts"], ["browserify"]);
 });

@@ -1,6 +1,6 @@
 {
   "name": "RestClient",
-  "version": "0.1.83",
+  "version": "0.1.85",
   "description": "A REST-ful HTTP client for JavaScript.",
   "main": "RestClient.js",
   "moduleType": [

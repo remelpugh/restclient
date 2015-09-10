@@ -1,3 +1,0 @@
-interface ISchema {
-}
-export = ISchema;

@@ -6,5 +6,7 @@ var del = require("del");
 
 gulp.task("clean", function(callback) {
     "use strict";
-    del(["./build/*"], callback);
+    del(["./build/*","./dist/*","./docs/*", "./docs/"]).then(function() {
+        callback();
+    });
 });

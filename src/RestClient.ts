@@ -357,10 +357,10 @@ class RestClient {
         if (_.has(xhr, "withCredentials")) {
             xhr.open(method, url, true);
         }
-        else if (!_.isUndefined(XDomainRequest)) {
-            xhr = new XDomainRequest();
-            xhr.open(method, url, true);
-        }
+        // else if (!_.isUndefined(XDomainRequest)) {
+        //     xhr = new XDomainRequest();
+        //     xhr.open(method, url, true);
+        // }
         else {
             // Otherwise, CORS is not supported by the browser.
             xhr = null;

@@ -3,10 +3,13 @@
  */
 var gulp = require("gulp");
 var ts = require("gulp-typescript");
+var concat = require("gulp-concat");
+var sourcemaps = require("gulp-sourcemaps");
 
 var project = ts.createProject({
-    declarationFiles: true,
+    declaration : true,
     module: "commonjs",
+    noEmitOnError: true,
     noExternalResolve: true,
     noImplicitAny: false,
     noLib: false,
@@ -18,11 +21,14 @@ var project = ts.createProject({
 gulp.task("compile", ["tslint"], function() {
     "use strict";
     var result = gulp.src(["src/*.ts", "typings/**/*.ts"])
+        //.pipe(sourcemaps.init())
         .pipe(ts(project));
 
-    result.dts
-        .pipe(gulp.dest("./dist/typings"));
+    // result.dts
+    //     .pipe(concat("RestClient.d.ts"))
+    //     .pipe(gulp.dest("./dist"));
 
     return result.js
+        //.pipe(sourcemaps.write())
         .pipe(gulp.dest("./build"));
 });

@@ -1,8 +1,8 @@
 # FOLDER IGNORES
 .idea
+.settings
 bower_components/
-build/definitions/
-build/js/
+build/
 CloudCode/
 node_modules/
 # FILE IGNORES
